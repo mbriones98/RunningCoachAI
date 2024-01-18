@@ -78,6 +78,23 @@ async def most_recent_activity(athlete_id: int):
     jsonResponse = util.decodeMongoDBResponse(dbResponse)
     return {"activity_id": jsonResponse[0]["id"]}
 
+@app.get('/athlete_stats')
+async def athlete_stats(athlete_id: int, request: Request):
+    statEndpoint = f"https://www.strava.com/api/v3/athletes/{athlete_id}/stats"
+
+    authHeader = request.headers["Authorization"]
+    if not authHeader:
+        raise HTTPException(status_code=401, detail="Authorization header not found.")
+    
+    accessToken = authHeader.split(" ")[1]
+
+    # TODO: clean this response data up
+    athleteStats = requests.get(url=statEndpoint, headers={
+        "Authorization": f"Bearer {accessToken}"
+    })
+
+    return athleteStats
+
 @app.get('/activity_feedback')
 async def activity_feedback(activity_id: int):
     activityCol = util.initializeMongoDB(mongoClientURL, "Athlete", "Activities")
@@ -97,6 +114,11 @@ async def activity_feedback(activity_id: int):
 
 @app.post('/webhook')
 async def webhook(event: WebhookEvent):
+    # check the type of strava webhook event
+    # if it's a 'create' event:
+        # store activity data
+        # update athlete stats
+        # run activity feedback
     print("Webhook event received")
     print(event)
     return
