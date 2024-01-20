@@ -64,6 +64,27 @@ async def exchange_token(code: str):
 
     return response
 
+@app.get('/four_week_activities_stats')
+async def four_week_activities_stats(athlete_id: int):
+    activityCol = util.initializeMongoDB(mongoClientURL, "Athlete", "Activities")
+
+    # query for activities within the last four weeks
+    # not sure if this query works yet
+    dbResponse = activityCol.find({
+        'athlete.id': athlete_id,
+        'start_date': {
+            '$dateSubtract': { 
+                'startDate': "$$NOW",
+                'unit': "week", 
+                'amount': 4
+            }
+        }
+    }, { 'id': 1 } )
+
+    jsonResponse = util.decodeMongoDBResponse(dbResponse)
+
+    return jsonResponse
+
 @app.get('/most_recent_activity')
 async def most_recent_activity(athlete_id: int):
     activityCol = util.initializeMongoDB(mongoClientURL, "Athlete", "Activities")
@@ -71,7 +92,10 @@ async def most_recent_activity(athlete_id: int):
     # query for activity with most recent start date
     dbResponse = activityCol.find({
         'athlete.id': athlete_id
-    }) \
+    }, {
+        'id': 1
+    }
+    ) \
         .sort('start_date', pymongo.DESCENDING) \
         .limit(1)
 
@@ -86,14 +110,29 @@ async def athlete_stats(athlete_id: int, request: Request):
     if not authHeader:
         raise HTTPException(status_code=401, detail="Authorization header not found.")
     
-    accessToken = authHeader.split(" ")[1]
+    athleteCol = util.initializeMongoDB(mongoClientURL, "Athlete", "Athlete")
 
-    # TODO: clean this response data up
-    athleteStats = requests.get(url=statEndpoint, headers={
-        "Authorization": f"Bearer {accessToken}"
+    if not util.doesAthleteExist(athlete_id, athleteCol):
+        accessToken = authHeader.split(" ")[1]
+
+        # TODO: clean this response data up
+        athleteStats = requests.get(url=statEndpoint, headers={
+            "Authorization": f"Bearer {accessToken}"
+        })
+        athleteStatsJson = dict(athleteStats.json())
+        athleteStatsJson["athlete_id"] = athlete_id
+
+        insertStatus = util.insertIntoMongoDB(athleteStatsJson, athleteCol)
+
+        # util.printMongoDBCollection(athleteCol)
+        if not insertStatus:
+            raise HTTPException(status_code=500, detail="Failed to insert athlete stats into database.")
+    
+    dbResponse = athleteCol.find_one({
+        'athlete_id': athlete_id
     })
 
-    return athleteStats
+    return util.decodeMongoDBResponse(dbResponse)
 
 @app.get('/activity_feedback')
 async def activity_feedback(activity_id: int):
@@ -116,6 +155,7 @@ async def activity_feedback(activity_id: int):
 async def webhook(event: WebhookEvent):
     # check the type of strava webhook event
     # if it's a 'create' event:
+        # clean activity data
         # store activity data
         # update athlete stats
         # run activity feedback
