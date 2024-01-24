@@ -25,7 +25,8 @@ mongoClientURL = 'mongodb://127.0.0.1:27017/'
 def getRandomStateString():
     return random.choices(string.ascii_lowercase, k=16)
 
-app.mount("/dashboard", StaticFiles(directory="dashboard"), name="dashboard")
+# Mount the static files directory on /dashboard
+app.mount("/dashboard", StaticFiles(directory="dashboard"), name="index")
 
 @app.get('/', response_class=RedirectResponse)
 async def root():
@@ -95,8 +96,7 @@ async def most_recent_activity(athlete_id: int):
     }, {
         'id': 1
     }
-    ) \
-        .sort('start_date', pymongo.DESCENDING) \
+    )   .sort('start_date', pymongo.DESCENDING) \
         .limit(1)
 
     jsonResponse = util.decodeMongoDBResponse(dbResponse)
@@ -119,6 +119,9 @@ async def athlete_stats(athlete_id: int, request: Request):
         athleteStats = requests.get(url=statEndpoint, headers={
             "Authorization": f"Bearer {accessToken}"
         })
+        if athleteStats.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to get athlete stats from Strava.")
+
         athleteStatsJson = dict(athleteStats.json())
         athleteStatsJson["athlete_id"] = athlete_id
 
