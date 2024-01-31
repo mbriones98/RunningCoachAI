@@ -3,8 +3,9 @@ import { decode } from '@googlemaps/polyline-codec';
 import dynamic from 'next/dynamic';
 
 interface CardProps {
+    activityName: string;
     polyline: string;
-    mileage: number;
+    distance: number;
     time: string;
 }
 
@@ -14,7 +15,7 @@ function decodePolyline(polyline: string): [number, number][] {
     return coordinates;
 }
 
-const Card: React.FC<CardProps> = ({ polyline, mileage, time }) => {
+const Card: React.FC<CardProps> = ({ activityName, polyline, distance, time }) => {
     const RoutePolyline = useMemo(() => dynamic(
         () => import('./routePolyline'),
         { ssr: false }
@@ -23,7 +24,8 @@ const Card: React.FC<CardProps> = ({ polyline, mileage, time }) => {
     return (
         <div className="card">
             <div className="route-polyline"><RoutePolyline coordinates={decodePolyline(polyline)} /></div>
-            <div className="mileage">{mileage} miles</div>
+            <div className="activity-name"><b>{activityName}</b></div>
+            <div className="distance">{distance} miles</div>
             <div className="time">{time}</div>
         </div>
     );

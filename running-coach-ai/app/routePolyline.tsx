@@ -5,7 +5,6 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css'
 import "leaflet-defaulticon-compatibility";
 
-
 export function RoutePolyline(props: { coordinates: [number, number][] }) {
     const minX = Math.min(...props.coordinates.map(coord => coord[0]));
     const minY = Math.min(...props.coordinates.map(coord => coord[1]));
@@ -13,16 +12,19 @@ export function RoutePolyline(props: { coordinates: [number, number][] }) {
     const maxY = Math.max(...props.coordinates.map(coord => coord[1]));
 
     return (
-        <MapContainer
-            bounds={[[minX, minY], [maxX, maxY]]}
-            scrollWheelZoom={false}
-            style={{ height: "400px", width: "200px" }}
-        >
-            <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            <Polyline pathOptions={{ color: 'red' }} positions={props.coordinates} />
-        </MapContainer>
+        <div className='map-container'>
+
+            <MapContainer
+                bounds={[[minX, minY], [maxX, maxY]]}
+                scrollWheelZoom={false}
+                style={{flex: 1, width: '100%'}}
+            >
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Polyline pathOptions={{ color: 'red' }} positions={props.coordinates} />
+            </MapContainer>
+        </div>
 
     )
 
